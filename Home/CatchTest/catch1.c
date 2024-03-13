@@ -34,7 +34,7 @@ void print_icmp_header(const u_char *packet);
     const u_char *packet;
     struct pcap_pkthdr packet_header;
     struct ether_header *ethernet_header;
-
+    int packetcount = 0;
 //extern char * devStr[MAX_LINE_LENGTH];
 //extern char path[MAX_LINE_LENGTH];
 //extern char condition[MAX_LINE_LENGTH];
@@ -111,21 +111,27 @@ int main() {
     }
     
     sleep(1);
+    int maxcatch;
+    printf("请设置最大捕获包数量:");
+    scanf("%d",&maxcatch);
     char anwser;
     printf("请确认您的输入信息是否正确\n");
     printf("网卡:%s\n",devStr);
     printf("路径:%s\n",path);
     printf("状态:%s\n",condition);
     printf("正则:%s\n",rule);
+    printf("数量:%d\n",maxcatch);
+    
     printf("请问配置是否正确(y/n):");
     scanf(" %c", &anwser);
     if (anwser == 'y'|| anwser == 'Y'){
-        printf("继续执行");
+        printf("即将进行抓包捕获...");
     } else if(anwser == 'n'|| anwser == 'N'){
-        printf("重新修改");
+        printf("即将返回重新修改...");
+        sleep(1);
         handtest(devStr,path,condition,rule);
     } else {
-        printf("无效指令");
+        printf("无效输入,即将正常进行捕获...");
     }
     sleep(1);
     
@@ -172,6 +178,10 @@ if (pcap_compile(device, &fb, rule, 0, net) == -1) {
             printf("Unknown packet type\n");
         }
         out_pcap  = pcap_dump_open(device,path);
+        packetcount++;
+        if (packetcount >= maxcatch) {
+            break;
+        }
     }
 
     pcap_close(packet);
