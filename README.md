@@ -1,0 +1,2 @@
+这是一个基于Centos系统的抓包捕获软件
+采用的基础库为Libpcap和Libnids
