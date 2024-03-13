@@ -1,0 +1,5 @@
+devStr=lo
+path=./packet/pack.pcap
+condition=live
+offlinepath=./packet/pack.pcap
+rule=ip
