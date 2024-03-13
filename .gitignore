@@ -50,3 +50,29 @@ modules.order
 Module.symvers
 Mkfile.old
 dkms.conf
+Home/Cat programe/Cat
+Home/Cat programe/Cat1
+Home/CatchTest/network_info
+Home/CatchTest/start
+Home/Select programe/Select
+Home/Select programe/Select2
+Home/Test/1/
+Home/Test/Test
+Home/UI programe/ui
+lib/2
+lib/3
+lib/4
+lib/5
+lib/catch
+lib/install.sh
+lib/packet/
+lib/sni
+lib/sniffer
+lib/start
+libnid/1
+libnid/2
+libnid/3
+libnid/mysniffer
+libnid/packet_sniffer
+libnid/test
+libnid/test2

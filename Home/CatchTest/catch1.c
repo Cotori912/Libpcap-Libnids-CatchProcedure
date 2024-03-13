@@ -122,6 +122,7 @@ int main() {
         printf("继续执行");
     } else if(anwser == 'n'|| anwser == 'N'){
         printf("重新修改");
+        handtest(devStr,path,condition,rule);
     } else {
         printf("无效指令");
     }
