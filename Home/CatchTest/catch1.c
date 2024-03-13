@@ -119,7 +119,11 @@ int main() {
     printf("请问配置是否正确(y/n):");
     scanf(" %c", &anwser);
     if (anwser == 'y'|| anwser == 'Y'){
-        printf("继续执行")
+        printf("继续执行");
+    } else if(anwser == 'n'|| anwser == 'N'){
+        printf("重新修改");
+    } else {
+        printf("无效指令");
     }
     sleep(1);
     
