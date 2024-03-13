@@ -15,6 +15,7 @@
 #include <string.h>
 #define MAX_LINE_LENGTH 100
 
+
 void print_ether_header(const u_char *packet);
 void print_ip_header(const u_char *packet);
 void print_tcp_header(const u_char *packet);
