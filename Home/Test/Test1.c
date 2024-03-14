@@ -16,14 +16,115 @@
 #include <netinet/ether.h>
 #include <netinet/ip_icmp.h>
 #include <time.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <ifaddrs.h>
+#include <netdb.h>
 #define MAX_LINE_LENGTH 100
 
-void print_ether_header(const u_char *packet);
+void print_ethernet_header(const u_char *packet);
 void print_ip_header(const u_char *packet);
 void print_tcp_header(const u_char *packet);
 void print_udp_header(const u_char *packet);
 void print_arp_header(const u_char *packet);
 void print_icmp_header(const u_char *packet);
+
+FILE *fp;
+char errBuf[PCAP_ERRBUF_SIZE];
+char line[MAX_LINE_LENGTH];
+char config_path[] = "config.txt";
+char devStr[MAX_LINE_LENGTH];
+char path[MAX_LINE_LENGTH];
+char condition[MAX_LINE_LENGTH];
+char rule[MAX_LINE_LENGTH];
+const u_char *packet;
+struct pcap_pkthdr packet_header;
+struct ether_header *ethernet_header;
+int packetcount = 0;
+
+void findnet() {
+    struct ifaddrs *ifaddr, *ifa;
+    int family, n;
+    char host[NI_MAXHOST];
+
+    // 获取当前系统的网卡信息
+    if (getifaddrs(&ifaddr) == -1) {
+        perror("getifaddrs");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("可用的网卡列表：\n");
+
+    // 遍历网卡列表
+    for (ifa = ifaddr, n = 0; ifa != NULL; ifa = ifa->ifa_next, n++) {
+        if (ifa->ifa_addr == NULL)
+            continue;
+
+        family = ifa->ifa_addr->sa_family;
+
+        // 仅输出IPv4和IPv6网卡信息
+        if (family == AF_INET || family == AF_INET6) {
+            if (getnameinfo(ifa->ifa_addr, (family == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6),
+                            host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) == 0) {
+                printf("[%d] %s: %s\n", n, ifa->ifa_name, host);
+            } else {
+                printf("[%d] %s\n", n, ifa->ifa_name);
+            }
+        }
+    }
+
+    freeifaddrs(ifaddr);
+
+}
+
+void handtest(char devStr[], char path[], char condition[], char rule[]) {
+    
+    printf("请依次输入您想要的参数\n");
+    printf("即将为您显示可用网卡...\n");
+    findnet();
+    
+    sleep(1);
+    
+    printf("请选择网卡(例如 eth0):");
+    scanf(" %s", devStr);
+    
+    printf("请输入默认路径(例如 ./packet/pack.pcap):");
+    scanf(" %s", path);
+    
+    printf("请输入程序状态(live or offline):");
+    scanf(" %s", condition);
+    
+    printf("请设置捕获正则(例如 ip tcp ):");
+    scanf(" %s", rule);
+}
+
+
+
+void autotest() {
+    printf("Running config.txt...\n");
+    if (fp == NULL) {
+        fprintf(stderr, "Error opening file: %s\n", config_path);
+        exit(EXIT_FAILURE);
+    }
+
+    while (fgets(line, MAX_LINE_LENGTH, fp) != NULL) {
+        // get the first string variable
+        if (strstr(line, "devStr=") != NULL) {
+            sscanf(line, "devStr=%s", devStr);
+        }
+        if(strstr(line,"path=")!=NULL){
+            sscanf(line,"path=%s",path);
+        }
+        if (strstr(line,"condition=")!=NULL){
+            sscanf(line,"condition=%s",condition);
+        }
+        if(strstr(line,"rule=")!=NULL){
+            sscanf(line,"rule=%s",rule);
+        }
+    }
+
+    fclose(fp);
+}
 
 void process_packet(struct ip *ip_header) {
     printf("Source IP: %s\n", inet_ntoa(ip_header->ip_src));
@@ -239,44 +340,56 @@ void program1() {
 }
 
 void program2() {
-    printf("Running Program 2...\n");
+    printf("Running Libpcap...\n");
     sleep(1);
-    FILE *fp;
-    char errBuf[PCAP_ERRBUF_SIZE];
-    char line[MAX_LINE_LENGTH];
-    char config_path[] = "config.txt";
-    char * devStr[MAX_LINE_LENGTH];
-    char path[MAX_LINE_LENGTH];
-    char condition[MAX_LINE_LENGTH];
-    char rule[MAX_LINE_LENGTH];
-    const u_char *packet;
-    struct pcap_pkthdr packet_header;
-    struct ether_header *ethernet_header;
-
+    int choice1;
     fp = fopen(config_path, "r");
-
-    if (fp == NULL) {
-        fprintf(stderr, "Error opening file: %s\n", config_path);
-        exit(EXIT_FAILURE);
+    printf("请问是否采用配置文件?\n");
+    printf("1.使用配置文件\n");
+    printf("2.手动输入\n");
+    printf("输入您的选择:");
+    scanf("%d", &choice1);
+    
+        switch (choice1) {
+        case 1:
+            autotest();
+            printf("已完成配置文件数据调用\n");
+            break;
+        case 2:
+            handtest(devStr,path,condition,rule);
+            printf("已完成配置文件数据输入\n");
+            break;
+        default:
+            printf("未知选项\n");
+            exit(1);
     }
 
-    while (fgets(line, MAX_LINE_LENGTH, fp) != NULL) {
-        // get the first string variable
-        if (strstr(line, "devStr=") != NULL) {
-            sscanf(line, "devStr=%s", devStr);
-        }
-        if(strstr(line,"path=")!=NULL){
-            sscanf(line,"path=%s",path);
-        }
-        if (strstr(line,"condition=")!=NULL){
-            sscanf(line,"condition=%s",condition);
-        }
-        if(strstr(line,"rule=")!=NULL){
-            sscanf(line,"rule=%s",rule);
-        }
-    }
+    sleep(1);
 
-    fclose(fp);
+    int maxcatch;
+    printf("请设置最大捕获包数量:");
+    scanf("%d",&maxcatch);
+    char anwser;
+    printf("请确认您的输入信息是否正确\n");
+    printf("网卡:%s\n",devStr);
+    printf("路径:%s\n",path);
+    printf("状态:%s\n",condition);
+    printf("正则:%s\n",rule);
+    printf("数量:%d\n",maxcatch);
+    
+    printf("请问配置是否正确(y/n):");
+    scanf(" %c", &anwser);
+    if (anwser == 'y'|| anwser == 'Y'){
+        printf("即将启动嗅探器...");
+    } else if(anwser == 'n'|| anwser == 'N'){
+        printf("即将返回重新修改...");
+        sleep(1);
+        handtest(devStr,path,condition,rule);
+    } else {
+        printf("无效输入,即将正常进行捕获...");
+    }
+    sleep(1);
+
     struct bpf_program fb;
     bpf_u_int32 net, mask;
     pcap_t *device; 
@@ -290,11 +403,9 @@ void program2() {
     pcap_dumper_t* out_pcap;
 if (pcap_compile(device, &fb, rule, 0, net) == -1) {
         fprintf(stderr, "Couldn't parse filter %s: %s\n", rule, pcap_geterr(device));
-        return EXIT_FAILURE;
     }
     if (pcap_setfilter(device, &fb) == -1) {
         fprintf(stderr, "Couldn't install filter %s: %s\n", rule, pcap_geterr(device));
-        return EXIT_FAILURE;
     }
 
     while (1) {
@@ -319,9 +430,14 @@ if (pcap_compile(device, &fb, rule, 0, net) == -1) {
             printf("Unknown packet type\n");
         }
         out_pcap  = pcap_dump_open(device,path);
+        packetcount++;
+        if (packetcount >= maxcatch) {
+            break;
+        }
+        sleep(1);
     }
 
-    pcap_close(packet);
+    pcap_close(device);
     // 在这里编写程序2的代码
 }
 
@@ -344,7 +460,7 @@ int main() {
     printf("⣿⣿⣿⣿⣿⣿⠇⣼⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢀⣿\n");
     printf("⣿⣿⣿⣿⣿⠏⢰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⢸⣿.        如果需要修改参数请前往配置文件config.txt修改\n");
     sleep(0.5);
-    printf("⣿⣿⣿⣿⠟⣰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⣿.\n");
+    printf("⣿⣿⣿⣿⠟⣰⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⠀⣿.        请基于软件足够权限或者使用例如root账户来运行\n ");
     sleep(0.5);
     printf("⣿⣿⣿⠋⣴⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⣿⡄⣿.\n");
     sleep(0.5);

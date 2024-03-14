@@ -38,13 +38,6 @@ void print_icmp_header(const u_char *packet);
     struct pcap_pkthdr packet_header;
     struct ether_header *ethernet_header;
     int packetcount = 0;
-//extern char * devStr[MAX_LINE_LENGTH];
-//extern char path[MAX_LINE_LENGTH];
-//extern char condition[MAX_LINE_LENGTH];
-//extern char rule[MAX_LINE_LENGTH];
-//extern FILE *fp;
-//extern char line[MAX_LINE_LENGTH];
-//extern char config_path[];
 
 void findnet() {
     struct ifaddrs *ifaddr, *ifa;
@@ -225,6 +218,7 @@ if (pcap_compile(device, &fb, rule, 0, net) == -1) {
         if (packetcount >= maxcatch) {
             break;
         }
+        sleep(1);
     }
 
     pcap_close(device);
