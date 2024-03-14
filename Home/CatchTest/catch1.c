@@ -13,10 +13,13 @@
 #include <netinet/ip_icmp.h>
 #include <time.h>
 #include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <ifaddrs.h>
+#include <netdb.h>
 #define MAX_LINE_LENGTH 100
 
-
-void print_ether_header(const u_char *packet);
+void print_ethernet_header(const u_char *packet);
 void print_ip_header(const u_char *packet);
 void print_tcp_header(const u_char *packet);
 void print_udp_header(const u_char *packet);
@@ -27,7 +30,7 @@ void print_icmp_header(const u_char *packet);
     char errBuf[PCAP_ERRBUF_SIZE];
     char line[MAX_LINE_LENGTH];
     char config_path[] = "config.txt";
-    char * devStr[MAX_LINE_LENGTH];
+    char devStr[MAX_LINE_LENGTH];
     char path[MAX_LINE_LENGTH];
     char condition[MAX_LINE_LENGTH];
     char rule[MAX_LINE_LENGTH];
@@ -42,6 +45,41 @@ void print_icmp_header(const u_char *packet);
 //extern FILE *fp;
 //extern char line[MAX_LINE_LENGTH];
 //extern char config_path[];
+
+void findnet() {
+    struct ifaddrs *ifaddr, *ifa;
+    int family, n;
+    char host[NI_MAXHOST];
+
+    // 获取当前系统的网卡信息
+    if (getifaddrs(&ifaddr) == -1) {
+        perror("getifaddrs");
+        exit(EXIT_FAILURE);
+    }
+
+    printf("可用的网卡列表：\n");
+
+    // 遍历网卡列表
+    for (ifa = ifaddr, n = 0; ifa != NULL; ifa = ifa->ifa_next, n++) {
+        if (ifa->ifa_addr == NULL)
+            continue;
+
+        family = ifa->ifa_addr->sa_family;
+
+        // 仅输出IPv4和IPv6网卡信息
+        if (family == AF_INET || family == AF_INET6) {
+            if (getnameinfo(ifa->ifa_addr, (family == AF_INET) ? sizeof(struct sockaddr_in) : sizeof(struct sockaddr_in6),
+                            host, NI_MAXHOST, NULL, 0, NI_NUMERICHOST) == 0) {
+                printf("[%d] %s: %s\n", n, ifa->ifa_name, host);
+            } else {
+                printf("[%d] %s\n", n, ifa->ifa_name);
+            }
+        }
+    }
+
+    freeifaddrs(ifaddr);
+
+}
 
 void autotest() {
     printf("Running config.txt...\n");
@@ -72,8 +110,12 @@ void autotest() {
 void handtest(char devStr[], char path[], char condition[], char rule[]) {
     
     printf("请依次输入您想要的参数\n");
+    printf("即将为您显示可用网卡...\n");
+    findnet();
     
-    printf("请输入网卡名称(例如 eth0):");
+    sleep(1);
+    
+    printf("请选择网卡(例如 eth0):");
     scanf(" %s", devStr);
     
     printf("请输入默认路径(例如 ./packet/pack.pcap):");
@@ -85,6 +127,7 @@ void handtest(char devStr[], char path[], char condition[], char rule[]) {
     printf("请设置捕获正则(例如 ip tcp ):");
     scanf(" %s", rule);
 }
+
 
 int main() {
     int choice;
@@ -125,7 +168,7 @@ int main() {
     printf("请问配置是否正确(y/n):");
     scanf(" %c", &anwser);
     if (anwser == 'y'|| anwser == 'Y'){
-        printf("即将进行抓包捕获...");
+        printf("即将启动嗅探器...");
     } else if(anwser == 'n'|| anwser == 'N'){
         printf("即将返回重新修改...");
         sleep(1);
@@ -184,7 +227,7 @@ if (pcap_compile(device, &fb, rule, 0, net) == -1) {
         }
     }
 
-    pcap_close(packet);
+    pcap_close(device);
     return 0;
 }
 
