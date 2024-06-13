@@ -1,0 +1,5 @@
+devStr=eth0
+path=1.pcap
+condition=live
+offlinepath=1.pcap
+rule=tcp
