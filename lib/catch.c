@@ -69,7 +69,6 @@ int main() {
     printf("You are offline!\n");
     device=pcap_open_offline(path,errBuf);
     }
-    pcap_dumper_t* out_pcap;
 if (pcap_compile(device, &fb, rule, 0, net) == -1) {
         fprintf(stderr, "Couldn't parse filter %s: %s\n", rule, pcap_geterr(device));
         return EXIT_FAILURE;
@@ -79,8 +78,16 @@ if (pcap_compile(device, &fb, rule, 0, net) == -1) {
         return EXIT_FAILURE;
     }
 
+    pcap_dumper_t* out_pcap;
+    out_pcap = pcap_dump_open(device,path);
+    if (out_pcap == NULL){
+        printf("Error opening dump file: %s\n", pcap_geterr(device));
+        return 1;
+    }
+
     while (1) {
         packet = pcap_next(device, &packet_header);
+        pcap_dump((u_char *)out_pcap, &packet_header, packet);
         if (packet == NULL) {
             printf("Error capturing packet\n");
             continue;
@@ -100,7 +107,6 @@ if (pcap_compile(device, &fb, rule, 0, net) == -1) {
             print_ethernet_header(packet);
             printf("Unknown packet type\n");
         }
-        out_pcap  = pcap_dump_open(device,path);
     }
 
     pcap_close(packet);
