@@ -1,5 +1,0 @@
-devStr=eth0
-path=./packet/pack.pcap
-condition=live
-offlinepath=./packet/pack.pcap
-rule=ip
